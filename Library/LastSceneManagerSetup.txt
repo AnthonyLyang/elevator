@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/GamemodeTest.unity
+- path: Assets/Scenes/PlayerController.unity
   isLoaded: 1
   isActive: 1

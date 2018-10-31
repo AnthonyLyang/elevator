@@ -36,16 +36,13 @@ public class EleSplit : MonoBehaviour
         rigid = GetComponent<Rigidbody>();
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
-        FallParent = transform.parent.parent.GetChild(2);
+        FallParent = transform.parent.parent.parent.GetChild(2);//这里永远是GameMode最初节点的child
         ParentMesh = new Mesh();
         MeshA = new Mesh();
         MeshB = new Mesh();
         FallMesh = new Mesh();
         StayMesh = GetComponent<MeshFilter>();
         StayMeshCollider = GetComponent<MeshCollider>();
-        //FallingPart = transform.GetChild(0).gameObject;
-        //FallFilter = FallingPart.GetComponent<MeshFilter>();
-        //FallCollider = FallingPart.GetComponent<MeshCollider>();
 
         storage = ObjectStorage.Instance;
         ParentMesh = storage.DefaultMesh;
@@ -205,6 +202,7 @@ public class EleSplit : MonoBehaviour
         o.transform.SetParent(FallParent);
         yield return new WaitForSeconds(storage.FallSurvive);
         o.transform.localPosition = Vector3.zero;
+        o.transform.localRotation = Quaternion.identity;
         o.SetActive(false);
     }
 }
