@@ -16,7 +16,11 @@ public class PlayerControlTest : MonoBehaviour
     //不在地面时保存在地上最后一刻的速度
     //Y轴加一个向下的加速度
     //落地还是用射线做吧
-    //落地之后要把
+
+
+    //cc在会动的地面表现不好
+    //改用transform做
+    //对地面检测可以用回collision
     RaycastHit hit;
     CharacterController cc;
     Vector3 Fall;
@@ -108,7 +112,7 @@ public class PlayerControlTest : MonoBehaviour
             //{
             //    return true;
             //}
-            transform.SetParent(hit.transform);
+            transform.SetParent(hit.transform.parent);
             return true;
         }
         transform.SetParent(null);

@@ -24,26 +24,36 @@ public class ObjectManager : MonoBehaviour
     ObjectStorage storage;
     GameObject[] Elevators;
     GameObject[] Lasers;
+    GameObject[] Lasers2;
+
+    //可能player的character也要在这里进行管理以方便访问
+    //同样也要存到ObjectStorage里
     private void Awake()
     {
         storage = ObjectStorage.Instance;
         CreateParentMeshCube();
         var ElevatorGroup = transform.GetChild(0);
         var LaserGroup = transform.GetChild(1);
+        var Laser2Group = transform.GetChild(2);
+        //加另一个朝向的射线
         var count = ElevatorGroup.childCount;
         Elevators = new GameObject[count];
         Lasers = new GameObject[count];
+        Lasers2 = new GameObject[count];
         for (int i = 0; i < count; i++)
         {
             Elevators[i] = ElevatorGroup.GetChild(i).gameObject;
             Lasers[i] = LaserGroup.GetChild(i).gameObject;
+            Lasers2[i] = Laser2Group.GetChild(i).gameObject;
         }
         for (int i = 0; i < count; i++)
         {
             storage.Lasers.AddLast(Lasers[i]);
+            storage.Lasers2.AddLast(Lasers2[i]);
             storage.RenewQueue(Elevators[i]);
         }
         storage.PresentLaser = storage.Lasers.First;
+        storage.PresentLaser2 = storage.Lasers2.First;
         //到时候还要写一个背景对象池更新
         //以上初始化对象池信息
 
@@ -55,7 +65,7 @@ public class ObjectManager : MonoBehaviour
         CreateParentMeshCube();
 
         //初始化FallingParts序列
-        var FallingGroup = transform.GetChild(2);
+        var FallingGroup = transform.GetChild(3);
         for (int j = 0; j < FallingGroup.childCount; j++)
         {
             var fallpart = FallingGroup.GetChild(j).gameObject;
@@ -64,14 +74,22 @@ public class ObjectManager : MonoBehaviour
         }
         storage.PresentFall = storage.Fallings.First;
         storage.PresentInfo = storage.Infos.First;
+
+        //加入Player
+        storage.Player = transform.GetChild(4).gameObject;
+        storage.PlayerStat = storage.Player.GetComponent<TransformControllTest>();
     }
     // Use this for initialization
     void Start ()
     {
-        StartCoroutine(InstallLasers());
-        StartCoroutine(ResetLasers());
+        StartCoroutine(InstallLasers(storage.PresentLaser));
+        StartCoroutine(ResetLasers(storage.Lasers));
         StartCoroutine(InstallElevator());
-	}	
+        StartCoroutine(InstallLasers(storage.PresentLaser2));
+        StartCoroutine(ResetLasers(storage.Lasers2));
+
+        //Invoke("StartAnother", 3f);
+    }	
 	// Update is called once per frame
 	void Update ()
     {
@@ -79,24 +97,26 @@ public class ObjectManager : MonoBehaviour
 	}
     
 
-    IEnumerator InstallLasers()
+    //双向激光之后可能刷新激光的机制要重写
+
+    IEnumerator InstallLasers(LinkedListNode<GameObject> node)
     {
-        while (storage.PresentLaser != null)
+        while (node != null)
         {
-            if (storage.PresentLaser.Next != null)
+            if (node.Next != null)
             {
-                SetLaserHeight(storage.PresentLaser);
-                storage.PresentLaser = storage.PresentLaser.Next;
+                SetLaserHeight(node);
+                node = node.Next;
             }
             yield return 0;
         }
     }
-    IEnumerator ResetLasers()
+    IEnumerator ResetLasers(LinkedList<GameObject> list)
     {
         while (true)
         {
             yield return new WaitForSeconds(LaserSurviveTime);
-            storage.RenewList(storage.Lasers);
+            storage.RenewList(list);
         }
     }//刷新激光的协程
     IEnumerator InstallElevator()
@@ -155,6 +175,13 @@ public class ObjectManager : MonoBehaviour
         lasernode.Value.transform.position = height;
         lasernode.Value.SetActive(true);
     }
+
+
+    void StartAnother()
+    {
+        StartCoroutine(InstallLasers(storage.PresentLaser2));
+        StartCoroutine(ResetLasers(storage.Lasers2));
+    }
 }
 
 public class ObjectStorage
@@ -176,6 +203,7 @@ public class ObjectStorage
     {
         DefaultMesh = new Mesh();
         Lasers = new LinkedList<GameObject>();
+        Lasers2 = new LinkedList<GameObject>();
         EnableElevators = new Queue<GameObject>();
         Fallings = new LinkedList<GameObject>();
         Infos = new LinkedList<FallInfo>();
@@ -187,8 +215,13 @@ public class ObjectStorage
     public float YHeight;//Mesh的长宽高参数，因为是立方体mesh
 
     public float FallSurvive;
+    //角色控制器信息
+    public GameObject Player;
+    public TransformControllTest PlayerStat;
     public LinkedList<GameObject> Lasers;
     public LinkedListNode<GameObject> PresentLaser;
+    public LinkedList<GameObject> Lasers2;
+    public LinkedListNode<GameObject> PresentLaser2;
     public LinkedListNode<GameObject> RenewList(LinkedList<GameObject>list)
     {
         var temp = list.First;
@@ -208,7 +241,6 @@ public class ObjectStorage
     {
         EnableElevators.Enqueue(input);
     }
-
     //同样用一个链表储存fallingpieces
     //需要多一些的fallingpiecies对象
     //并且需要另一个链表储存fallingpieces的信息

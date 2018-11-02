@@ -68,6 +68,7 @@
     <Compile Include="Assets\Resources\Scripts\ObjectManager.cs" />
     <Compile Include="Assets\Resources\Scripts\PlayerControlTest.cs" />
     <Compile Include="Assets\Resources\Scripts\SplitTest2.cs" />
+    <Compile Include="Assets\Resources\Scripts\TransformControllTest.cs" />
     <Compile Include="Assets\VerticalMove.cs" />
     <None Include="Assets\Resources\Shaders\ProjectorMultiply.shader" />
     <Reference Include="Cinemachine">

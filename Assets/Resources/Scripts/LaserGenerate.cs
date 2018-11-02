@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LaserGenerate : MonoBehaviour {
-
+public class LaserGenerate : MonoBehaviour
+{
     LineRenderer Line;
     Transform Node1;
     Transform Node2;
