@@ -7,6 +7,8 @@ TagManager:
   - Cut
   - Laser
   - ELEVATOR
+  - FALL
+  - WALL
   layers:
   - Default
   - TransparentFX

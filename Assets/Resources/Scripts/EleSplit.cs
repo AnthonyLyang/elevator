@@ -36,7 +36,7 @@ public class EleSplit : MonoBehaviour
         rigid = GetComponent<Rigidbody>();
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
-        FallParent = transform.parent.parent.parent.GetChild(3);//这里永远是GameMode最初节点的child
+        FallParent = transform.parent.parent.parent.GetChild(2);//这里永远是GameMode最初节点的child
         ParentMesh = new Mesh();
         MeshA = new Mesh();
         MeshB = new Mesh();
@@ -65,6 +65,7 @@ public class EleSplit : MonoBehaviour
         if (Fail)
         {
             storage.Player.transform.SetParent(transform.parent.parent.parent);
+            storage.PlayerStat.IsGrounded = false;
             return;
         }
         Debug.Log("Triggered");

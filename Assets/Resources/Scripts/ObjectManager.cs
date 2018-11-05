@@ -19,13 +19,17 @@ public class ObjectManager : MonoBehaviour
     public float EleRefreshTime;
     //下落物生存时间的参数
     public float FallSurvivalTime;
-
+    //电梯刷新位置缓存的参数
+    Vector3 ElePosTemp;
+    Vector3 LaserPosTemp;
 
     ObjectStorage storage;
     GameObject[] Elevators;
     GameObject[] Lasers;
-    GameObject[] Lasers2;
+    GameObject[] Walls;
 
+    int playerY;
+    int YTemp = 0;
     //可能player的character也要在这里进行管理以方便访问
     //同样也要存到ObjectStorage里
     private void Awake()
@@ -34,26 +38,25 @@ public class ObjectManager : MonoBehaviour
         CreateParentMeshCube();
         var ElevatorGroup = transform.GetChild(0);
         var LaserGroup = transform.GetChild(1);
-        var Laser2Group = transform.GetChild(2);
-        //加另一个朝向的射线
+
         var count = ElevatorGroup.childCount;
         Elevators = new GameObject[count];
         Lasers = new GameObject[count];
-        Lasers2 = new GameObject[count];
+
         for (int i = 0; i < count; i++)
         {
             Elevators[i] = ElevatorGroup.GetChild(i).gameObject;
             Lasers[i] = LaserGroup.GetChild(i).gameObject;
-            Lasers2[i] = Laser2Group.GetChild(i).gameObject;
+
         }
         for (int i = 0; i < count; i++)
         {
             storage.Lasers.AddLast(Lasers[i]);
-            storage.Lasers2.AddLast(Lasers2[i]);
+
             storage.RenewQueue(Elevators[i]);
         }
         storage.PresentLaser = storage.Lasers.First;
-        storage.PresentLaser2 = storage.Lasers2.First;
+
         //到时候还要写一个背景对象池更新
         //以上初始化对象池信息
 
@@ -65,7 +68,7 @@ public class ObjectManager : MonoBehaviour
         CreateParentMeshCube();
 
         //初始化FallingParts序列
-        var FallingGroup = transform.GetChild(3);
+        var FallingGroup = transform.GetChild(2);
         for (int j = 0; j < FallingGroup.childCount; j++)
         {
             var fallpart = FallingGroup.GetChild(j).gameObject;
@@ -76,8 +79,17 @@ public class ObjectManager : MonoBehaviour
         storage.PresentInfo = storage.Infos.First;
 
         //加入Player
-        storage.Player = transform.GetChild(4).gameObject;
+        storage.Player = transform.GetChild(3).gameObject;
         storage.PlayerStat = storage.Player.GetComponent<TransformControllTest>();
+
+        //背景
+        var wallgroup = transform.GetChild(4);
+        for (int i = 0; i < wallgroup.childCount; i++)
+        {
+            storage.Walls.AddLast(wallgroup.GetChild(i).gameObject);
+        }
+        storage.HWall = storage.Walls.First;
+        storage.LWall = storage.Walls.Last;
     }
     // Use this for initialization
     void Start ()
@@ -85,15 +97,31 @@ public class ObjectManager : MonoBehaviour
         StartCoroutine(InstallLasers(storage.PresentLaser));
         StartCoroutine(ResetLasers(storage.Lasers));
         StartCoroutine(InstallElevator());
-        StartCoroutine(InstallLasers(storage.PresentLaser2));
-        StartCoroutine(ResetLasers(storage.Lasers2));
 
-        //Invoke("StartAnother", 3f);
     }	
 	// Update is called once per frame
 	void Update ()
     {
-		
+        playerY = (int)(storage.Player.transform.position.y / 10f);
+        //Debug.Log(playerY);
+        if (playerY > YTemp)
+        {
+            YTemp = playerY;
+            storage.LWall.Value.transform.position += new Vector3(0, 70, 0);
+            storage.Walls.RemoveLast();
+            storage.Walls.AddFirst(storage.LWall);
+            storage.HWall = storage.Walls.First;
+            storage.LWall = storage.Walls.Last;
+        }
+        else if (playerY < YTemp)
+        {
+            YTemp = playerY;
+            storage.HWall.Value.transform.position -= new Vector3(0, 70, 0);
+            storage.Walls.RemoveFirst();
+            storage.Walls.AddLast(storage.HWall);
+            storage.HWall = storage.Walls.First;
+            storage.LWall = storage.Walls.Last;
+        }
 	}
     
 
@@ -107,6 +135,7 @@ public class ObjectManager : MonoBehaviour
             {
                 SetLaserHeight(node);
                 node = node.Next;
+                yield return new WaitForSeconds(LaserSurviveTime / 4f);
             }
             yield return 0;
         }
@@ -170,18 +199,27 @@ public class ObjectManager : MonoBehaviour
         //这个函数以后要改成根据玩家的位置刷新激光
         //按照固定的高度差刷新一定会导致电梯与激光的高度最终永久错开
         //就再也碰不到了
-        heighttemp += Height;
-        var height = new Vector3(0, heighttemp, Random.Range(-ZLength / 2f, ZLength / 2f));
-        lasernode.Value.transform.position = height;
+        //heighttemp += Height;
+        //var height = new Vector3(0, heighttemp, Random.Range(-ZLength / 2f, ZLength / 2f));
+        //lasernode.Value.transform.position = height;
+        //lasernode.Value.SetActive(true);
+        
+        int Dice = Random.Range(0, 2);
+        if (Dice == 0)
+        {
+            var height = new Vector3(0, storage.Player.transform.position.y + Height, Random.Range(-ZLength / 2f, ZLength / 2f));
+            lasernode.Value.transform.position = height;
+        }
+        else
+        {
+            var height = new Vector3(Random.Range(-XWidth / 2f, XWidth / 2f), storage.Player.transform.position.y + Height, 0);
+            lasernode.Value.transform.position = height;
+            lasernode.Value.transform.localEulerAngles = new Vector3(0, 90, 0);
+        }
         lasernode.Value.SetActive(true);
     }
 
 
-    void StartAnother()
-    {
-        StartCoroutine(InstallLasers(storage.PresentLaser2));
-        StartCoroutine(ResetLasers(storage.Lasers2));
-    }
 }
 
 public class ObjectStorage
@@ -203,10 +241,10 @@ public class ObjectStorage
     {
         DefaultMesh = new Mesh();
         Lasers = new LinkedList<GameObject>();
-        Lasers2 = new LinkedList<GameObject>();
         EnableElevators = new Queue<GameObject>();
         Fallings = new LinkedList<GameObject>();
         Infos = new LinkedList<FallInfo>();
+        Walls = new LinkedList<GameObject>();
 
     }//构造函数
     public Mesh DefaultMesh;//初始的正方体Mesh在这里保存，由外界脚本导入
@@ -220,8 +258,14 @@ public class ObjectStorage
     public TransformControllTest PlayerStat;
     public LinkedList<GameObject> Lasers;
     public LinkedListNode<GameObject> PresentLaser;
-    public LinkedList<GameObject> Lasers2;
-    public LinkedListNode<GameObject> PresentLaser2;
+
+    //墙面的存储单元
+    public LinkedList<GameObject> Walls;
+    public LinkedListNode<GameObject> HWall;
+    public LinkedListNode<GameObject> LWall;
+
+
+
     public LinkedListNode<GameObject> RenewList(LinkedList<GameObject>list)
     {
         var temp = list.First;
