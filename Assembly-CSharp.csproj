@@ -60,6 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Jump.cs" />
+    <Compile Include="Assets\Resources\Scripts\CameraPos.cs" />
     <Compile Include="Assets\Resources\Scripts\CreateTempMesh.cs" />
     <Compile Include="Assets\Resources\Scripts\CutParaX.cs" />
     <Compile Include="Assets\Resources\Scripts\EleSplit.cs" />

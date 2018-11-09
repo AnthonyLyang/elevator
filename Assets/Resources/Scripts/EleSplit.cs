@@ -58,17 +58,25 @@ public class EleSplit : MonoBehaviour
     // Update is called once per frame
     void Update ()
     {
-		
+        if (transform.parent.position.y - storage.Player.transform.position.y >= 20f)
+        {
+            storage.RenewQueue(transform.parent.gameObject);
+            transform.parent.gameObject.SetActive(false);
+        }
 	}
     private void OnTriggerExit(Collider other)
     {
         if (Fail)
         {
+            if (storage.Player.transform.parent != transform.parent)
+            {
+                return;
+            }
             storage.Player.transform.SetParent(transform.parent.parent.parent);
             storage.PlayerStat.IsGrounded = false;
+            storage.PlayerStat.stat = VStat.Falling;
             return;
         }
-        Debug.Log("Triggered");
         storage.PresentFall.Value.transform.SetParent(transform);
         storage.PresentFall.Value.transform.localPosition = Vector3.zero;
         FallingPart = storage.PresentFall.Value;
@@ -76,19 +84,16 @@ public class EleSplit : MonoBehaviour
         FallCollider = storage.PresentInfo.Value.FallCollider;
         storage.RenewFall();
 
-        Debug.Log(other.transform.parent.localRotation.y);
         var Slide = (other.transform.position - transform.position);
         //这里要分两种情况，垂直X的和垂直Z的 先写了垂直Z的
         if (other.transform.parent.localRotation.eulerAngles.y == 90f)
         {
             OnCutZ(Slide);
-            Debug.Log(StayMesh.mesh == null);
             storage.RenewMesh(CompareMeshParaZ(MeshA, MeshB), StayMesh.mesh);
         }
         else
         {
             OnCutX(Slide);
-            Debug.Log(StayMesh.mesh == null);
             storage.RenewMesh(CompareMeshParaX(MeshA, MeshB), StayMesh.mesh);
         }
         FallFilter.mesh = FallMesh;
@@ -188,13 +193,12 @@ public class EleSplit : MonoBehaviour
     //ele的销毁和回收
     IEnumerator EleRecycle()
     {
-        Debug.Log(Fail);
         if (Fail)
         {
             rigid.isKinematic = false;
             yield return new WaitForSeconds(storage.FallSurvive+0.5f);
+            storage.RenewQueue(transform.parent.gameObject);
             transform.parent.gameObject.SetActive(false);
-            storage.RenewQueue(gameObject);
         }
     }
 
@@ -207,4 +211,6 @@ public class EleSplit : MonoBehaviour
         o.transform.localRotation = Quaternion.identity;
         o.SetActive(false);
     }
+    //这个应该拿到fallingpart自己身上
+    //以防止elevator自行销毁之后fallingpart的销毁协程中止
 }

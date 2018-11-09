@@ -156,8 +156,9 @@ public class ObjectManager : MonoBehaviour
             {
                 var PreEle = storage.EnableElevators.Dequeue();
                 PreEle.SetActive(true);
+                yield return new WaitForSeconds(EleRefreshTime);
             }
-            yield return new WaitForSeconds(EleRefreshTime);
+            else yield return 0;
         }
     }
     void CreateParentMeshCube()
